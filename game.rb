@@ -1,12 +1,13 @@
 require 'ruby2d'
 set title: "game"
 
+
 @width = 500.0
 @height = 500.0
 set width: @width
 set height: @height
 
-@speed = 5
+
 @player_size = 20
 @middle_x = @width/2
 @middle_y = @height/2
@@ -17,17 +18,46 @@ set height: @height
 @astorid_amount = 15
 @astroid_size = 20
 
-    
-@player = Square.new(
-    color: 'red',
-    x: 40,
-    y: 10,
-    size: @player_size,
-)
+@coins = []
+@coin_amount = 0
+@max_coins = 10
 
+class Player
+    attr_accessor :x, :y, :square, :speed
+        def initialize(x,y,size)
+            @speed = 5
+            @square = Square.new(
+                color: 'red',
+                x: x,
+                y: y,
+                size: size,
+            )
+        end
+end
+
+
+#def collision_check(obj)
+#    p obj.size
+#    square_dist = obj.size/2
+#        if @player.y >= obj.y-square_dist and @player.y <= obj.y+square_dist && @player.x >= obj.x-square_dist and @player.x <= obj.x+square_dist
+#            obj.remove
+#        end
+#end
+
+class Coin
+    attr_accessor :x, :y, :size
+    def initialize(x,y)
+        @coin = Square.new(
+        x: x,
+        y: y,
+        size: 20,
+        color:'yellow'
+    )
+    end
+end
 
 class Astroid
-    attr_accessor :x, :y, :size
+    attr_accessor :x, :y, :size, :square
 
     def initialize(x, y, size)
     
@@ -37,18 +67,21 @@ class Astroid
       size: size
       )
     end
+    
     def move(speed)
-        @square.x += speed
+        @square.x +=speed
     end
+    #def collision_check(player)
+    #    square_dist = @square.size/2
+    #        if player.y >= @square.y-square_dist and player.y <= @square.y+square_dist && player.x >= @square.x-square_dist and player.x <= @square.x+square_dist
+    #            @square.remove
+    #        end
+    #end
+
 
 end
 
-def collision_check(player,obj)
-    obj_dist = obj.size/2
-        if player.y >= obj.y-obj_dist and player.y <= obj.y+obj_dist && player.x >= obj.x-obj_dist and player.x <= obj.x+obj_dist
-            obj.remove
-        end
-end
+
 
 def hurt()
     @health-=1
@@ -56,11 +89,18 @@ end
 
 def spawn_astroid()
     if @last_astoid_frame + @astorid_amount < Window.frames
-        x = -
+        x = -1
         y = rand(0..@height)
         @astroids.push(Astroid.new(x,y,@astroid_size))
         @last_astoid_frame = Window.frames
     end
+end
+
+def spawn_coin()
+    x = rand(0..width)
+    y = rand(0..height)
+    @coins.push(Coin.new(x,y))
+    @coin_amount+=1
 end
 
 def border_check(player)
@@ -81,20 +121,32 @@ def border_check(player)
     return false
 end
 
+def collision_check(obj1,obj2, obj1_size,obj2_size)
+    if obj1.square.x - obj1_size <= obj2.square.x and obj1.square.x + obj1_size >= obj2.square.x
+        return true
+    end
+    return false
+end
+
+
+#p @player
+@player = Player.new(10,10,10)
+
+
 
 on :key_held do |event|
     case event.key
     when 'up'
-        @player.y -= @speed
+        @player.square.y -= @player.speed
         #p @player.y
     when 'down'
-        @player.y += @speed
+        @player.square.y += @player.speed
         #p @player.y
     when 'left'
-        @player.x -= @speed
+        @player.square.x -= @player.speed
         #p @player.x
     when 'right'
-        @player.x += @speed
+        @player.square.x += @player.speed
         #p @player.x
     end
 end
@@ -104,10 +156,17 @@ end
 
 update do
     spawn_astroid()
+    if @coin_amount < @max_coins
+        spawn_coin()
+    end
     @astroids.each do |astroid|
         astroid.move(5)
-        p astroid.square
-        collision_check(@player,@square)
+        #astroid.collision_check(@player)
+        if collision_check(@player,astroid,@player_size,@astroid_size)
+            astroid.square.remove
+        end
     end
+
 end
+
 show
