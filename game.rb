@@ -7,11 +7,12 @@ set title: "game"
 set width: @width
 set height: @height
 
+@damage_astroids = []
 
 @player_size = 20
 @middle_x = @width/2
 @middle_y = @height/2
-@health = 3
+@health = 10
 
 @astroids = []
 @last_astoid_frame = 0
@@ -35,15 +36,6 @@ class Player
         end
 end
 
-
-#def collision_check(obj)
-#    p obj.size
-#    square_dist = obj.size/2
-#        if @player.y >= obj.y-square_dist and @player.y <= obj.y+square_dist && @player.x >= obj.x-square_dist and @player.x <= obj.x+square_dist
-#            obj.remove
-#        end
-#end
-
 class Coin
     attr_accessor :x, :y, :size
     def initialize(x,y)
@@ -56,11 +48,32 @@ class Coin
     end
 end
 
-class Astroid
-    attr_accessor :x, :y, :size, :square
+class Healthbar
+    attr_accessor :bar, :width
+    def initialize(width)
+        @health = Rectangle.new(
+        x:0,
+        y:0,
+        width:100,
+        height:10,
+        color:'white'
+        )
+        @bar = Rectangle.new(
+        x:0,
+        y:0,
+        width:100,
+        height:10,
+        color:'red'
+        )
+    end
 
-    def initialize(x, y, size)
+end
+
+class Astroid
+    attr_accessor :x, :y, :size, :square, :destroyed
     
+    def initialize(x, y, size)
+    @destroyed = false
       @square = Square.new(
       x: x,
       y: y,
@@ -81,10 +94,15 @@ class Astroid
 
 end
 
+def stop()
+    puts "Bättre lycka nästa gång"
+    exit()
+end
 
-
-def hurt()
+def hurt(astroid)
+    astroid.destroyed = true
     @health-=1
+    @bar.bar.width-=10
 end
 
 def spawn_astroid()
@@ -102,28 +120,76 @@ def spawn_coin()
     @coins.push(Coin.new(x,y))
     @coin_amount+=1
 end
-
+@current_collisions = []
 def border_check(player)
     distance = @player_size
-    p player.x
-    if player.x+distance >= @width
-        return true
+    if player.square.x+distance >= @width
+        if !@current_collisions.include?("right")
+            @current_collisions << "right"
+        end
+    else
+        i = 0
+        while i <@current_collisions.length
+            if @current_collisions[i] == "right"
+                   @current_collisions.delete_at(i)
+            end
+            i+=1
+        end
     end
-    if player.x <= 0
-        return true
+    if player.square.x <= 0
+        if !@current_collisions.include?("left")
+            @current_collisions << "left"
+        end
+    else
+        i = 0
+        while i <@current_collisions.length
+            if @current_collisions[i] == "left"
+                @current_collisions.delete_at(i)
+            end
+            i+=1
+        end
     end
-        if player.y+distance >= @height
-        return true
+        if player.square.y+distance >= @height
+            if !@current_collisions.include?("down")
+                @current_collisions << "down"
+            end
+    else
+        i = 0
+        while i <@current_collisions.length
+            if @current_collisions[i] == "down"
+                   @current_collisions.delete_at(i)
+            end
+            i+=1
+        end
     end
-    if player.y <= 0
-        return true
+    if player.square.y <= 0
+        if !@current_collisions.include?("up")
+            i = 0
+            @current_collisions << "up"
+            while i <@current_collisions.length
+                if@current_collisions[i] == "down"
+                       @current_collisions.delete_at(i)
+                end
+                i+=1
+            end
+        end
+    else
+        i = 0
+        while i <@current_collisions.length
+            if @current_collisions[i] == "up"
+                   @current_collisions.delete_at(i)
+            end
+            i+=1
+        end
     end
-    return false
+    #@current_collisions.clear()
 end
 
 def collision_check(obj1,obj2, obj1_size,obj2_size)
     if obj1.square.x - obj1_size <= obj2.square.x and obj1.square.x + obj1_size >= obj2.square.x
-        return true
+        if obj1.square.y - obj1_size <= obj2.square.y and obj1.square.y + obj1_size >= obj2.square.y
+            return true
+        end
     end
     return false
 end
@@ -131,41 +197,65 @@ end
 
 #p @player
 @player = Player.new(10,10,10)
+@bar = Healthbar.new(100)
 
 
 
 on :key_held do |event|
     case event.key
+    
     when 'up'
-        @player.square.y -= @player.speed
-        #p @player.y
-    when 'down'
-        @player.square.y += @player.speed
-        #p @player.y
+        if !@current_collisions.include?("up")
+            @player.square.y -= @player.speed
+        end
+    when 'down' 
+        if !@current_collisions.include?("down")
+            @player.square.y += @player.speed
+        end
     when 'left'
-        @player.square.x -= @player.speed
-        #p @player.x
-    when 'right'
-        @player.square.x += @player.speed
-        #p @player.x
+        if !@current_collisions.include?("left")
+            @player.square.x -= @player.speed
+        end
+    when 'right' 
+        if !@current_collisions.include?("right")
+            @player.square.x += @player.speed
+        end
     end
 end
 
-
-#@astroids.push(Astroid.new(-5,rand(0..@height)))
-
-update do
-    spawn_astroid()
-    if @coin_amount < @max_coins
-        spawn_coin()
-    end
+def check_astroids()
     @astroids.each do |astroid|
         astroid.move(5)
-        #astroid.collision_check(@player)
         if collision_check(@player,astroid,@player_size,@astroid_size)
+            hurt(astroid)
             astroid.square.remove
         end
     end
+    @astroids = @astroids.select do |astroid|
+        astroid.square.x >= 0 && 
+        astroid.square.x <= @width && 
+        astroid.square.y >= 0 && 
+        astroid.square.y <= @height &&
+        !astroid.destroyed
+
+    end
+end
+def check_coins()
+
+end
+
+update do
+    spawn_astroid()
+    check_astroids()
+    check_coins()
+    border_check(@player)
+    if @coin_amount < @max_coins
+        spawn_coin()
+    end
+    if @health <= 0
+        stop()
+    end
+    
 
 end
 
