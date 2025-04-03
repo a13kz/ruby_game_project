@@ -2,8 +2,8 @@ require 'ruby2d'
 set title: "game"
 
 
-@width = 500.0
-@height = 500.0
+@width = 1000.0
+@height = 800.0
 set width: @width
 set height: @height
 
@@ -19,9 +19,16 @@ set height: @height
 @astorid_amount = 15
 @astroid_size = 20
 
+@bullets = []
+@last_bullet_frame = 0
+@bullet_amount = 10
+@bullet_size = 7.5
+@bullet_speed = 5
+
 @coins = []
 @coin_amount = 0
 @max_coins = 10
+@coin_collector_counter = 0
 
 class Player
     attr_accessor :x, :y, :square, :speed
@@ -37,14 +44,24 @@ class Player
 end
 
 class Coin
-    attr_accessor :x, :y, :size
+    attr_accessor :x, :y, :size, :square, :destroyed
     def initialize(x,y)
-        @coin = Square.new(
+    @destroyed = false
+        @square = Square.new(
         x: x,
         y: y,
         size: 20,
         color:'yellow'
     )
+    end
+end
+
+class Coin_counter
+    attr_accessor :text 
+    def initialize()
+        @text = Text.new(
+        "hello"+@coin_collector_counter.to_s
+        )
     end
 end
 
@@ -84,14 +101,23 @@ class Astroid
     def move(speed)
         @square.x +=speed
     end
-    #def collision_check(player)
-    #    square_dist = @square.size/2
-    #        if player.y >= @square.y-square_dist and player.y <= @square.y+square_dist && player.x >= @square.x-square_dist and player.x <= @square.x+square_dist
-    #            @square.remove
-    #        end
-    #end
+end
 
-
+class Bullet
+    attr_accessor :x, :y, :size, :square, :destroyed
+    
+    def initialize(x, y, size)
+    @destroyed = false
+      @square = Square.new(
+      x: x,
+      y: y,
+      size: size
+      )
+    end
+    
+    def move(speed)
+        @square.x -=speed
+    end
 end
 
 def stop()
@@ -112,6 +138,13 @@ def spawn_astroid()
         @astroids.push(Astroid.new(x,y,@astroid_size))
         @last_astoid_frame = Window.frames
     end
+end
+
+def spawn_bullet(x,y)
+  if @last_bullet_frame + @astorid_amount < Window.frames
+      @bullets.push(Bullet.new(x,y,@bullet_size))
+      @last_bullet_frame = Window.frames
+  end
 end
 
 def spawn_coin()
@@ -182,7 +215,6 @@ def border_check(player)
             i+=1
         end
     end
-    #@current_collisions.clear()
 end
 
 def collision_check(obj1,obj2, obj1_size,obj2_size)
@@ -194,16 +226,15 @@ def collision_check(obj1,obj2, obj1_size,obj2_size)
     return false
 end
 
-
-#p @player
 @player = Player.new(10,10,10)
 @bar = Healthbar.new(100)
-
+@coin_counter = Coin_counter.new()
 
 
 on :key_held do |event|
     case event.key
-    
+    when 'space'
+        spawn_bullet(@player.square.x,@player.square.y)
     when 'up'
         if !@current_collisions.include?("up")
             @player.square.y -= @player.speed
@@ -230,6 +261,14 @@ def check_astroids()
             hurt(astroid)
             astroid.square.remove
         end
+        @bullets.each do |bullet|
+            if collision_check(bullet,astroid,@bullet_size,@astroid_size)
+                astroid.destroyed = true
+                bullet.destroyed = true
+                bullet.square.remove
+                astroid.square.remove
+            end
+        end
     end
     @astroids = @astroids.select do |astroid|
         astroid.square.x >= 0 && 
@@ -239,17 +278,45 @@ def check_astroids()
         !astroid.destroyed
 
     end
+
 end
-def check_coins()
+
+def check_bullets()
+    @bullets.each do |bullet|
+        bullet.move(@bullet_speed)
+    end
+    @bullets = @bullets.select do |bullet|
+        bullet.square.x >= 0 && 
+        bullet.square.x <= @width && 
+        bullet.square.y >= 0 && 
+        bullet.square.y <= @height &&
+        !bullet.destroyed
+    end
+end
+
+def check_coins()    
+    
+    @coins = @coins.select do |coin|
+        !coin.destroyed
+    end
+    @coins.each do |coin|
+        if collision_check(@player,coin,@player_size,20)
+            coin.square.remove
+            @coin_collector_counter+=1
+            coin.destroyed = true
+        end
+    end
 
 end
 
 update do
+    p @coin_collector_counter
     spawn_astroid()
+    check_bullets()
     check_astroids()
     check_coins()
     border_check(@player)
-    if @coin_amount < @max_coins
+    if @coins.length < @max_coins
         spawn_coin()
     end
     if @health <= 0
