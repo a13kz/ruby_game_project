@@ -1,5 +1,5 @@
 require 'ruby2d'
-set title: "game"
+set title: "SPACE EVADERS"
 
 
 @width = 1000.0
@@ -9,10 +9,10 @@ set height: @height
 
 @damage_astroids = []
 
-@player_size = 20
+@player_size = 25
 @middle_x = @width/2
 @middle_y = @height/2
-@health = 10
+@health = 0
 
 @astroids = []
 @last_astoid_frame = 0
@@ -22,13 +22,13 @@ set height: @height
 @bullets = []
 @last_bullet_frame = 0
 @bullet_amount = 10
-@bullet_size = 7.5
+@bullet_size = 12.5
 @bullet_speed = 5
 
 @coins = []
 @coin_amount = 0
 @max_coins = 10
-@coin_collector_counter = 0
+@coin_counter = 0
 
 class Player
     attr_accessor :x, :y, :square, :speed
@@ -56,11 +56,16 @@ class Coin
     end
 end
 
-class Coin_counter
-    attr_accessor :text 
+class Scoreboard
+    attr_accessor :text, :board
     def initialize()
+        @board = "Coins:"
         @text = Text.new(
-        "hello"+@coin_collector_counter.to_s
+        @board,
+        x: 10, y: 10,
+        size: 20,
+        color: 'white',
+        z: 10
         )
     end
 end
@@ -120,10 +125,52 @@ class Bullet
     end
 end
 
+@coin_counter = 2
+
 def stop()
-    puts "Bättre lycka nästa gång"
+    puts "jäklar! DU fick hela #{@coin_counter}"
+    scores = File.readlines("Highscores")
+
+    position = find_index(scores,@coin_counter)
+    if position == false
+        exit()
+    end
+    p scores
+    p position-1
+    org_scores = scores
+    scores[position] = @coin_counter
+    position-=1
+    #while position > 0
+    #    scores[position-1] = org_scores[position]
+    #    position-=1
+    #end
+    p scores
+    fil = File.open("Highscores", "w")
+    fil.puts scores
+    fil.close
     exit()
 end
+
+def find_index(arr,score)
+    i = 0
+    if arr[i].to_i >= score
+        puts "kuk"
+        return false
+    end
+    while i < arr.length
+        if arr[i].to_i >= score
+            p arr[i]
+            p "döda mig"
+            return i
+        end
+        i +=1
+    end
+    p "död"
+    p arr[i].to_i
+    p score
+    return i
+end
+
 
 def hurt(astroid)
     astroid.destroyed = true
@@ -226,9 +273,9 @@ def collision_check(obj1,obj2, obj1_size,obj2_size)
     return false
 end
 
-@player = Player.new(10,10,10)
+@player = Player.new(10,10,@player_size)
 @bar = Healthbar.new(100)
-@coin_counter = Coin_counter.new()
+
 
 
 on :key_held do |event|
@@ -284,12 +331,12 @@ end
 def check_bullets()
     @bullets.each do |bullet|
         bullet.move(@bullet_speed)
+        if bullet.square.x < -10
+            bullet.square.remove
+        end
     end
     @bullets = @bullets.select do |bullet|
-        bullet.square.x >= 0 && 
-        bullet.square.x <= @width && 
-        bullet.square.y >= 0 && 
-        bullet.square.y <= @height &&
+        bullet.square.x >= -10 && 
         !bullet.destroyed
     end
 end
@@ -302,7 +349,7 @@ def check_coins()
     @coins.each do |coin|
         if collision_check(@player,coin,@player_size,20)
             coin.square.remove
-            @coin_collector_counter+=1
+            @coin_counter+=1
             coin.destroyed = true
         end
     end
@@ -310,7 +357,9 @@ def check_coins()
 end
 
 update do
-    p @coin_collector_counter
+    scoreboard = Scoreboard.new()
+    scoreboard.board = "Coins #{@coin_counter}"
+    scoreboard.text.remove
     spawn_astroid()
     check_bullets()
     check_astroids()
@@ -322,8 +371,6 @@ update do
     if @health <= 0
         stop()
     end
-    
-
 end
 
 show
