@@ -12,7 +12,7 @@ set height: @height
 @player_size = 25
 @middle_x = @width/2
 @middle_y = @height/2
-@health = 0
+@health = 10
 
 @astroids = []
 @last_astoid_frame = 0
@@ -96,11 +96,11 @@ class Astroid
     
     def initialize(x, y, size)
     @destroyed = false
-      @square = Square.new(
-      x: x,
-      y: y,
-      size: size
-      )
+    @square = Square.new(
+    x: x,
+    y: y,
+    size: size
+    )
     end
     
     def move(speed)
@@ -113,11 +113,11 @@ class Bullet
     
     def initialize(x, y, size)
     @destroyed = false
-      @square = Square.new(
-      x: x,
-      y: y,
-      size: size
-      )
+    @square = Square.new(
+    x: x,
+    y: y,
+    size: size
+    )
     end
     
     def move(speed)
@@ -125,49 +125,37 @@ class Bullet
     end
 end
 
-@coin_counter = 2
+@coin_counter = 1
+@scores = File.readlines("Highscores")
+
 
 def stop()
-    puts "jäklar! DU fick hela #{@coin_counter}"
-    scores = File.readlines("Highscores")
-
-    position = find_index(scores,@coin_counter)
-    if position == false
+    pos = find_index(@scores,@coin_counter)
+    p pos
+    p @scores[pos]
+    if pos == false
         exit()
     end
-    p scores
-    p position-1
-    org_scores = scores
-    scores[position] = @coin_counter
-    position-=1
-    #while position > 0
-    #    scores[position-1] = org_scores[position]
-    #    position-=1
-    #end
-    p scores
+    @scores.insert(pos,@coin_counter)
+    @scores.pop
     fil = File.open("Highscores", "w")
-    fil.puts scores
+    fil.puts @scores
     fil.close
     exit()
 end
 
 def find_index(arr,score)
-    i = 0
+    i = arr.length
     if arr[i].to_i >= score
-        puts "kuk"
         return false
     end
-    while i < arr.length
+    while i > 0
         if arr[i].to_i >= score
             p arr[i]
-            p "döda mig"
-            return i
+            return i+1
         end
-        i +=1
+        i -=1
     end
-    p "död"
-    p arr[i].to_i
-    p score
     return i
 end
 
@@ -188,10 +176,10 @@ def spawn_astroid()
 end
 
 def spawn_bullet(x,y)
-  if @last_bullet_frame + @astorid_amount < Window.frames
-      @bullets.push(Bullet.new(x,y,@bullet_size))
-      @last_bullet_frame = Window.frames
-  end
+    if @last_bullet_frame + @astorid_amount < Window.frames
+        @bullets.push(Bullet.new(x,y,@bullet_size))
+        @last_bullet_frame = Window.frames
+    end
 end
 
 def spawn_coin()
@@ -211,7 +199,7 @@ def border_check(player)
         i = 0
         while i <@current_collisions.length
             if @current_collisions[i] == "right"
-                   @current_collisions.delete_at(i)
+                @current_collisions.delete_at(i)
             end
             i+=1
         end
@@ -237,7 +225,7 @@ def border_check(player)
         i = 0
         while i <@current_collisions.length
             if @current_collisions[i] == "down"
-                   @current_collisions.delete_at(i)
+                @current_collisions.delete_at(i)
             end
             i+=1
         end
@@ -248,7 +236,7 @@ def border_check(player)
             @current_collisions << "up"
             while i <@current_collisions.length
                 if@current_collisions[i] == "down"
-                       @current_collisions.delete_at(i)
+                    @current_collisions.delete_at(i)
                 end
                 i+=1
             end
@@ -257,11 +245,15 @@ def border_check(player)
         i = 0
         while i <@current_collisions.length
             if @current_collisions[i] == "up"
-                   @current_collisions.delete_at(i)
+                @current_collisions.delete_at(i)
             end
             i+=1
         end
     end
+end
+
+def menu()
+    puts"menu"
 end
 
 def collision_check(obj1,obj2, obj1_size,obj2_size)
@@ -276,7 +268,12 @@ end
 @player = Player.new(10,10,@player_size)
 @bar = Healthbar.new(100)
 
-
+on :key_down do |event|
+    case event.key
+    when 'escape'
+        menu()
+    end
+end
 
 on :key_held do |event|
     case event.key
