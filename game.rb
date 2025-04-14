@@ -30,6 +30,9 @@ set height: @height
 @max_coins = 10
 @coin_counter = 0
 
+@active = true
+@menu = false
+
 class Player
     attr_accessor :x, :y, :square, :speed
         def initialize(x,y,size)
@@ -125,8 +128,28 @@ class Bullet
     end
 end
 
+class Menu
+    attr_accessor :square
+
+    def initialize()
+        @title = Text.new('SPACE EVADERS', size: 72, y: 40, color: 'red')
+        @square = Square.new(
+            x: 10,
+            y: 10,
+            size: 100
+            )
+        #@text.x = (Window.width - @text.width) / 2
+    end
+end
+
+class Start
+    
+
+end
 @coin_counter = 1
 @scores = File.readlines("Highscores")
+
+
 
 
 def stop()
@@ -253,7 +276,13 @@ def border_check(player)
 end
 
 def menu()
-    puts"menu"
+    @active = false
+    puts @active
+    menu = Menu.new
+
+    if !@menu
+        @active = true
+    end
 end
 
 def collision_check(obj1,obj2, obj1_size,obj2_size)
@@ -264,40 +293,6 @@ def collision_check(obj1,obj2, obj1_size,obj2_size)
     end
     return false
 end
-
-@player = Player.new(10,10,@player_size)
-@bar = Healthbar.new(100)
-
-on :key_down do |event|
-    case event.key
-    when 'escape'
-        menu()
-    end
-end
-
-on :key_held do |event|
-    case event.key
-    when 'space'
-        spawn_bullet(@player.square.x,@player.square.y)
-    when 'up'
-        if !@current_collisions.include?("up")
-            @player.square.y -= @player.speed
-        end
-    when 'down' 
-        if !@current_collisions.include?("down")
-            @player.square.y += @player.speed
-        end
-    when 'left'
-        if !@current_collisions.include?("left")
-            @player.square.x -= @player.speed
-        end
-    when 'right' 
-        if !@current_collisions.include?("right")
-            @player.square.x += @player.speed
-        end
-    end
-end
-
 def check_astroids()
     @astroids.each do |astroid|
         astroid.move(5)
@@ -353,20 +348,58 @@ def check_coins()
 
 end
 
-update do
-    scoreboard = Scoreboard.new()
-    scoreboard.board = "Coins #{@coin_counter}"
-    scoreboard.text.remove
-    spawn_astroid()
-    check_bullets()
-    check_astroids()
-    check_coins()
-    border_check(@player)
-    if @coins.length < @max_coins
-        spawn_coin()
+@player = Player.new(10,10,@player_size)
+@bar = Healthbar.new(100)
+
+on :key_down do |event|
+    case event.key
+    when 'escape'
+        puts @menu
+        @menu = !@menu
+        menu()
     end
-    if @health <= 0
-        stop()
+end
+
+on :key_held do |event|
+    if @active
+        case event.key
+        when 'space'
+            spawn_bullet(@player.square.x,@player.square.y)
+        when 'up'
+            if !@current_collisions.include?("up")
+                @player.square.y -= @player.speed
+            end
+        when 'down' 
+            if !@current_collisions.include?("down")
+                @player.square.y += @player.speed
+            end
+        when 'left'
+            if !@current_collisions.include?("left")
+                @player.square.x -= @player.speed
+            end
+        when 'right' 
+            if !@current_collisions.include?("right")
+                @player.square.x += @player.speed
+            end
+        end
+    end
+end
+
+
+
+update do
+    if @active
+        spawn_astroid()
+        check_bullets()
+        check_astroids()
+        check_coins()
+        border_check(@player)
+        if @coins.length < @max_coins
+            spawn_coin()
+        end
+        if @health <= 0
+            stop()
+        end
     end
 end
 
