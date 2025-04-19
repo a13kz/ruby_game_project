@@ -7,8 +7,6 @@ set title: "SPACE EVADERS"
 set width: @width
 set height: @height
 
-@damage_astroids = []
-
 @player_size = 25
 @middle_x = @width/2
 @middle_y = @height/2
@@ -23,7 +21,7 @@ set height: @height
 @last_bullet_frame = 0
 @bullet_amount = 10
 @bullet_size = 12.5
-@bullet_speed = 5
+@bullet_speed = 7.5
 
 @coins = []
 @coin_amount = 0
@@ -32,6 +30,8 @@ set height: @height
 
 @active = true
 @menu = false
+
+@current_collisions = []
 
 class Player
     attr_accessor :x, :y, :square, :speed
@@ -59,18 +59,14 @@ class Coin
     end
 end
 
-class Scoreboard
-    attr_accessor :text, :board
-    def initialize()
-        @board = "Coins:"
-        @text = Text.new(
-        @board,
-        x: 10, y: 10,
-        size: 20,
-        color: 'white',
-        z: 10
-        )
-    end
+class Counter
+  def initialize()
+    @text = Text.new(
+    x: 0,
+    y: 0,
+    size: 10
+    )
+  end
 end
 
 class Healthbar
@@ -128,11 +124,20 @@ class Bullet
     end
 end
 
+class Start
+    def initialize()
+        @square = Square.new(
+            size: 10
+            )
+    end
+end
+
 class Menu
-    attr_accessor :square
+    attr_accessor :square, :title, :counter
 
     def initialize()
         @title = Text.new('SPACE EVADERS', size: 72, y: 40, color: 'red')
+        @counter = Text.new('hej',size: 40, color: 'blue')
         @square = Square.new(
             x: 10,
             y: 10,
@@ -141,12 +146,6 @@ class Menu
         #@text.x = (Window.width - @text.width) / 2
     end
 end
-
-class Start
-    
-
-end
-@coin_counter = 1
 @scores = File.readlines("Highscores")
 
 
@@ -211,7 +210,8 @@ def spawn_coin()
     @coins.push(Coin.new(x,y))
     @coin_amount+=1
 end
-@current_collisions = []
+
+
 def border_check(player)
     distance = @player_size
     if player.square.x+distance >= @width
@@ -244,15 +244,15 @@ def border_check(player)
             if !@current_collisions.include?("down")
                 @current_collisions << "down"
             end
-    else
-        i = 0
-        while i <@current_collisions.length
-            if @current_collisions[i] == "down"
-                @current_collisions.delete_at(i)
+        else
+            i = 0
+            while i <@current_collisions.length
+                if @current_collisions[i] == "down"
+                    @current_collisions.delete_at(i)
+                end
+                i+=1
             end
-            i+=1
         end
-    end
     if player.square.y <= 0
         if !@current_collisions.include?("up")
             i = 0
@@ -275,12 +275,25 @@ def border_check(player)
     end
 end
 
-def menu()
-    @active = false
-    puts @active
-    menu = Menu.new
+@menu_visual = Menu.new
+@menu_visual.square.remove
+@menu_visual.title.remove
+@menu_visual.counter.remove
 
-    if !@menu
+def menu()
+    puts @active    
+    if @menu
+        @active = false
+        @menu_visual.square.add
+        @menu_visual.title.add
+        @menu_visual.counter.add
+        @menu_visual.counter.text = @coin_counter.to_s
+        
+        
+    else
+        @menu_visual.square.remove
+        @menu_visual.title.remove
+        @menu_visual.counter.remove
         @active = true
     end
 end
@@ -333,15 +346,21 @@ def check_bullets()
     end
 end
 
-def check_coins()    
-    
+def check_difficulty()
+end
+
+
+
+def check_coins()
     @coins = @coins.select do |coin|
         !coin.destroyed
     end
     @coins.each do |coin|
         if collision_check(@player,coin,@player_size,20)
+            
             coin.square.remove
             @coin_counter+=1
+            #@score.board = "coins: #{coin_counter}"
             coin.destroyed = true
         end
     end
