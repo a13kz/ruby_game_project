@@ -10,7 +10,7 @@ set height: @height
 @player_size = 25
 @middle_x = @width/2
 @middle_y = @height/2
-@health = 10
+@health = 2
 
 @astroids = []
 @last_astoid_frame = 0
@@ -146,24 +146,40 @@ class Menu
         #@text.x = (Window.width - @text.width) / 2
     end
 end
+
+class End
+    attr_accessor :text
+    def initialize()
+        @text = Text.new(
+        "GAME OVER YOU GOT:0",
+        size: 60
+        )
+        @text.x = (Window.width - @text.width) / 2
+        @text.y = (Window.height - @text.height) / 2
+    end
+end
+
 @scores = File.readlines("Highscores")
 
 
 
-
 def stop()
+    @active = false
     pos = find_index(@scores,@coin_counter)
     p pos
-    p @scores[pos]
+    #p @scores[pos]
     if pos == false
-        exit()
+        @end_text = End.new()
+        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}"
+    else
+        @scores.insert(pos,@coin_counter)
+        @scores.pop
+        fil = File.open("Highscores", "w")
+        fil.puts @scores
+        fil.close
+        @end_text = End.new()
+        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}"
     end
-    @scores.insert(pos,@coin_counter)
-    @scores.pop
-    fil = File.open("Highscores", "w")
-    fil.puts @scores
-    fil.close
-    exit()
 end
 
 def find_index(arr,score)
