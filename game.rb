@@ -10,7 +10,7 @@ set height: @height
 @player_size = 25
 @middle_x = @width/2
 @middle_y = @height/2
-@health = 2
+@health = 10
 
 @astroids = []
 @last_astoid_frame = 0
@@ -60,13 +60,10 @@ class Coin
 end
 
 class Counter
-  def initialize()
-    @text = Text.new(
-    x: 0,
-    y: 0,
-    size: 10
-    )
-  end
+    attr_accessor :counter
+    def initialize()
+        @counter = Text.new("Points:0",size: 40, y: Window.height-75, x: 0, color: 'blue')
+    end
 end
 
 class Healthbar
@@ -133,11 +130,10 @@ class Start
 end
 
 class Menu
-    attr_accessor :square, :title, :counter
+    attr_accessor :square, :title
 
     def initialize()
         @title = Text.new('SPACE EVADERS', size: 72, y: 40, color: 'red')
-        @counter = Text.new('hej',size: 40, color: 'blue')
         @square = Square.new(
             x: 10,
             y: 10,
@@ -161,7 +157,9 @@ end
 
 @scores = File.readlines("Highscores")
 
-
+def start()
+  
+end
 
 def stop()
     @active = false
@@ -172,13 +170,14 @@ def stop()
         @end_text = End.new()
         @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s
     else
+        @end_text = End.new()
+        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s
         @scores.insert(pos,@coin_counter)
-        @scores.pop
+        @scores.pop        
         fil = File.open("Highscores", "w")
         fil.puts @scores
         fil.close
-        @end_text = End.new()
-        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s
+
     end
 end
 
@@ -294,7 +293,6 @@ end
 @menu_visual = Menu.new
 @menu_visual.square.remove
 @menu_visual.title.remove
-@menu_visual.counter.remove
 
 def menu()
     puts @active    
@@ -302,14 +300,9 @@ def menu()
         @active = false
         @menu_visual.square.add
         @menu_visual.title.add
-        @menu_visual.counter.add
-        @menu_visual.counter.text = @coin_counter.to_s
-        
-        
     else
         @menu_visual.square.remove
         @menu_visual.title.remove
-        @menu_visual.counter.remove
         @active = true
     end
 end
@@ -365,6 +358,7 @@ end
 def check_difficulty()
 end
 
+@counter = Counter.new()
 
 
 def check_coins()
@@ -373,10 +367,11 @@ def check_coins()
     end
     @coins.each do |coin|
         if collision_check(@player,coin,@player_size,20)
-            
             coin.square.remove
             @coin_counter+=1
-            #@score.board = "coins: #{coin_counter}"
+            @counter.counter.remove
+            @counter.counter.text = "Points:#{@coin_counter}".to_s
+            @counter.counter.add
             coin.destroyed = true
         end
     end
