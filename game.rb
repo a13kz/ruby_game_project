@@ -170,7 +170,7 @@ def stop()
     #p @scores[pos]
     if pos == false
         @end_text = End.new()
-        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}"
+        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s
     else
         @scores.insert(pos,@coin_counter)
         @scores.pop
@@ -178,7 +178,7 @@ def stop()
         fil.puts @scores
         fil.close
         @end_text = End.new()
-        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}"
+        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s
     end
 end
 
