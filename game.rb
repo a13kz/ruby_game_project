@@ -28,10 +28,12 @@ set height: @height
 @max_coins = 10
 @coin_counter = 0
 
-@active = true
-@menu = false
+@active = false
+@start = true
+@stop = false
 
 @current_collisions = []
+@scores = File.readlines("Highscores")
 
 class Player
     attr_accessor :x, :y, :square, :speed
@@ -121,11 +123,20 @@ class Bullet
     end
 end
 
-class Start
+class Start_screen
+    attr_accessor :text, :title, :info
     def initialize()
-        @square = Square.new(
-            size: 10
-            )
+        @title = Text.new('SPACE EVADERS', size: 72, y: 40, color: 'white')
+        @info = Text.new('Press space to start', size: 30, y: 425, color: 'white')
+        @text = Text.new(
+        "Start",
+        size: 60
+        )
+        @leaderboard = Text.new(File.readlines("Highscores"),size: 20) 
+        @title.x = (Window.width - @title.width) / 2
+        @info.x = (Window.width - @info.width) / 2
+        @text.x = (Window.width - @text.width) / 2
+        @text.y = (Window.height - @text.height) / 2
     end
 end
 
@@ -133,7 +144,7 @@ class Menu
     attr_accessor :square, :title
 
     def initialize()
-        @title = Text.new('SPACE EVADERS', size: 72, y: 40, color: 'red')
+
         @square = Square.new(
             x: 10,
             y: 10,
@@ -155,17 +166,12 @@ class End
     end
 end
 
-@scores = File.readlines("Highscores")
 
-def start()
-  
-end
 
 def stop()
     @active = false
+    @stop = true
     pos = find_index(@scores,@coin_counter)
-    p pos
-    #p @scores[pos]
     if pos == false
         @end_text = End.new()
         @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s
@@ -195,7 +201,10 @@ def find_index(arr,score)
     end
     return i
 end
+    @start_screen = Start_screen.new()
+def start()
 
+end
 
 def hurt(astroid)
     astroid.destroyed = true
@@ -292,17 +301,17 @@ end
 
 @menu_visual = Menu.new
 @menu_visual.square.remove
-@menu_visual.title.remove
+#@menu_visual.title.remove
 
 def menu()
     puts @active    
     if @menu
         @active = false
         @menu_visual.square.add
-        @menu_visual.title.add
+        #@menu_visual.title.add
     else
         @menu_visual.square.remove
-        @menu_visual.title.remove
+        #@menu_visual.title.remove
         @active = true
     end
 end
@@ -382,16 +391,18 @@ end
 @bar = Healthbar.new(100)
 
 on :key_down do |event|
-    case event.key
-    when 'escape'
-        puts @menu
-        @menu = !@menu
-        menu()
+    if !@start && !@stop
+        case event.key
+        when 'escape'
+            puts @menu
+            @menu = !@menu
+            menu()
+        end
     end
 end
 
 on :key_held do |event|
-    if @active
+    if @active && !@start
         case event.key
         when 'space'
             spawn_bullet(@player.square.x,@player.square.y)
@@ -416,6 +427,35 @@ on :key_held do |event|
 end
 
 
+on :key_held do |event|
+    if @start
+        case event.key
+        when 'space'
+            @active = true
+            @start = false
+            @start_screen.title.remove
+            @start_screen.text.remove
+            @start_screen.info.remove
+        when 'up'
+            if !@current_collisions.include?("up")
+                @player.square.y -= @player.speed
+            end
+        when 'down' 
+            if !@current_collisions.include?("down")
+                @player.square.y += @player.speed
+            end
+        when 'left'
+            if !@current_collisions.include?("left")
+                @player.square.x -= @player.speed
+            end
+        when 'right' 
+            if !@current_collisions.include?("right")
+                @player.square.x += @player.speed
+            end
+        end
+    end
+end
+
 
 update do
     if @active
@@ -430,6 +470,8 @@ update do
         if @health <= 0
             stop()
         end
+    elsif @start
+        start()
     end
 end
 
