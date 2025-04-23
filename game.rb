@@ -47,11 +47,14 @@ set height: @height
 @scores = File.readlines("Highscores")
 
 @difficulty_interval = 25
+@speed = 5
+
+@max_power_ups = 3
 
 class Player
-    attr_accessor :x, :y, :square, :speed
+    attr_accessor :x, :y, :square
         def initialize(x,y,size)
-            @speed = 5
+            
             @square = Square.new(
                 color: 'red',
                 x: x,
@@ -175,15 +178,22 @@ end
 
 class Menu
     attr_accessor :square, :title
-
+    menu_alternative = ['resume','quit']
     def initialize()
-
+        #@title = Text.new('Space Evaders', size: 72, y: 40, color: 'white')
+        @resume = Text.new('resume', size: 30, y: 425, color: 'white')
+        @menu_text = Text.new('Menu',size: 30, y: 450)
+        @quit = Text.new('Quit',size: 30, y: 475)
         @square = Square.new(
             x: 10,
             y: 10,
             size: 100
             )
     end
+    #@title.x = (Window.width - @title.width) / 2
+    #@resume.x = (Window.width - @resume.width) / 2
+    #@menu_text.x = (Window.width - @menu_text.width) / 2
+    #@quit.x = (Window.width - @quit.width) / 2
 end
 
 class End
@@ -473,19 +483,19 @@ on :key_held do |event|
             spawn_bullet(@player.square.x,@player.square.y)
         when 'up'
             if !@current_collisions.include?("up")
-                @player.square.y -= @player.speed
+                @player.square.y -= @speed
             end
         when 'down' 
             if !@current_collisions.include?("down")
-                @player.square.y += @player.speed
+                @player.square.y += @speed
             end
         when 'left'
             if !@current_collisions.include?("left")
-                @player.square.x -= @player.speed
+                @player.square.x -= @speed
             end
         when 'right' 
             if !@current_collisions.include?("right")
-                @player.square.x += @player.speed
+                @player.square.x += @speed
             end
         end
     end
@@ -496,7 +506,6 @@ on :key_held do |event|
     if @start
         case event.key
         when 'space'
-
             @active = true
             @start = false
             @start_screen.title.remove
@@ -504,27 +513,38 @@ on :key_held do |event|
             @start_screen.info.remove
         when 'up'
             if !@current_collisions.include?("up")
-                @player.square.y -= @player.speed
+                @player.square.y -= @speed
             end
         when 'down' 
             if !@current_collisions.include?("down")
-                @player.square.y += @player.speed
+                @player.square.y += @speed
             end
         when 'left'
             if !@current_collisions.include?("left")
-                @player.square.x -= @player.speed
+                @player.square.x -= @speed
             end
         when 'right' 
             if !@current_collisions.include?("right")
-                @player.square.x += @player.speed
+                @player.square.x += @speed
             end
+        end
+    end
+end
+on :key_held do |event|
+    if @start
+        case event.key
+        when 'space'
+            @active = true
+            @start = false
+            @start_screen.title.remove
+            @start_screen.text.remove
+            @start_screen.info.remove
         end
     end
 end
 @time = 0
 
 update do
-    p @time
     if @active
         #p @power_up
         check_difficulty()
@@ -537,8 +557,11 @@ update do
         if @coins.length < @max_coins
             spawn_coin()
         end
-        if @power_ups.length < @max_coins
+        if @power_ups.length < @max_power_ups
             spawn_power_up()
+        end
+        if @power_up
+            @speed = 10
         end
         if @health <= 0
             stop()
