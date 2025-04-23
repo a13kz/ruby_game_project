@@ -14,16 +14,20 @@ set height: @height
 
 @astroids = []
 @last_astroid_frame = 0
-@astroid_amount = 15
+@astroid_amount = 10
 @astroid_size = 20
 @astroid_amount_total = 0
 @astroid_speed = 5
+@last_total_astroid = 0
 
 @bullets = []
 @last_bullet_frame = 0
-@bullet_amount = 10
+@bullet_amount = 10 
 @bullet_size = 12.5
 @bullet_speed = 7.5
+
+@power_ups = []
+@power = false
 
 @coins = []
 @coin_amount = 0
@@ -37,7 +41,7 @@ set height: @height
 @current_collisions = []
 @scores = File.readlines("Highscores")
 
-@difficulty = 1
+@difficulty_interval = 25
 
 class Player
     attr_accessor :x, :y, :square, :speed
@@ -127,6 +131,19 @@ class Bullet
     end
 end
 
+class Power_up
+    attr_accessor :square, :destroyed
+    def initialize(x,y)
+        @destroyed = false
+        @square = Square.new(
+            x: x,
+            y: y,
+            size: 4,
+            color: 'red'
+        )
+    end
+end
+
 class Start_screen
     attr_accessor :text, :title, :info
     def initialize()
@@ -136,6 +153,13 @@ class Start_screen
         "Start",
         size: 60
         )
+        leaderboard = File.readlines("Highscores")
+        leaderboard.each do |score|
+            Text.new(
+                score,
+                size: 10
+            )
+        end
         @leaderboard = Text.new(File.readlines("Highscores"),size: 20) 
         @title.x = (Window.width - @title.width) / 2
         @info.x = (Window.width - @info.width) / 2
@@ -154,7 +178,6 @@ class Menu
             y: 10,
             size: 100
             )
-        #@text.x = (Window.width - @text.width) / 2
     end
 end
 
@@ -198,7 +221,6 @@ def find_index(arr,score)
     end
     while i > 0
         if arr[i].to_i >= score
-            p arr[i]
             return i+1
         end
         i -=1
@@ -222,12 +244,12 @@ def spawn_astroid()
         x = -1
         y = rand(0..@height)
         @astroids.push(Astroid.new(x,y,@astroid_size))
-        @last_astoid_frame = Window.frames
+        @last_astroid_frame = Window.frames
     end
 end
 
 def spawn_bullet(x,y)
-    if @last_bullet_frame + @astroid_amount < Window.frames
+    if @last_bullet_frame + @bullet_amount < Window.frames
         @bullets.push(Bullet.new(x,y,@bullet_size))
         @last_bullet_frame = Window.frames
     end
@@ -238,6 +260,11 @@ def spawn_coin()
     y = rand(0..height)
     @coins.push(Coin.new(x,y))
     @coin_amount+=1
+end
+def spawn_power_up()
+    x = rand(0..width)
+    y = rand(0..height)
+    @power_ups.push(Power_up.new(x,y))
 end
 
 
@@ -370,8 +397,9 @@ def check_bullets()
 end
 @last_total_astroid = 0
 def check_difficulty()
-    if @last_total_astroid + 10 < @astroid_amount_total
+    if @last_total_astroid + @difficulty_interval < @astroid_amount_total
         @astroid_speed+=1
+        @last_total_astroid = @astroid_amount_total 
     end
 end
 
@@ -390,6 +418,18 @@ def check_coins()
             @counter.counter.text = "Points:#{@coin_counter}".to_s
             @counter.counter.add
             coin.destroyed = true
+        end
+    end
+
+end
+def check_power_ups()
+    @power_ups = @power_ups.select do |power_up|
+        !power_up.destroyed
+    end
+    @power_ups.each do |power_up|
+        if collision_check(@player,power_up,@player_size,20)
+            power_up.square.remove
+            power_up.destroyed = true
         end
     end
 
@@ -472,9 +512,14 @@ update do
         check_bullets()
         check_astroids()
         check_coins()
+        check_power_ups()
         border_check(@player)
+
         if @coins.length < @max_coins
             spawn_coin()
+        end
+        if @power_ups.length < @max_coins
+            spawn_power_up()
         end
         if @health <= 0
             stop()
