@@ -38,6 +38,11 @@ set height: @height
 @start = true
 @stop = false
 
+@start_timer = 0
+@pause_timestamp = 0
+@paused_time = 0
+@start_time = 0
+
 @current_collisions = []
 @scores = File.readlines("Highscores")
 
@@ -138,8 +143,8 @@ class Power_up
         @square = Square.new(
             x: x,
             y: y,
-            size: 4,
-            color: 'red'
+            size: 40,
+            color: 'orange'
         )
     end
 end
@@ -428,6 +433,9 @@ def check_power_ups()
     end
     @power_ups.each do |power_up|
         if collision_check(@player,power_up,@player_size,20)
+            @start_timer = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            @paused_time = 0
+            @power_up = true
             power_up.square.remove
             power_up.destroyed = true
         end
@@ -441,10 +449,19 @@ end
 on :key_down do |event|
     if !@start && !@stop
         case event.key
-        when 'escape'
+        when 'escape'            
+
+            
             puts @menu
             @menu = !@menu
             menu()
+            if @menu
+                @pause_timestamp = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+            end
+            if !@menu
+                @start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+                @paused_time = @start_time - @pause_timestamp
+            end
         end
     end
 end
@@ -479,6 +496,7 @@ on :key_held do |event|
     if @start
         case event.key
         when 'space'
+
             @active = true
             @start = false
             @start_screen.title.remove
@@ -503,10 +521,12 @@ on :key_held do |event|
         end
     end
 end
-
+@time = 0
 
 update do
+    p @time
     if @active
+        #p @power_up
         check_difficulty()
         spawn_astroid()
         check_bullets()
@@ -514,7 +534,6 @@ update do
         check_coins()
         check_power_ups()
         border_check(@player)
-
         if @coins.length < @max_coins
             spawn_coin()
         end
@@ -523,6 +542,10 @@ update do
         end
         if @health <= 0
             stop()
+        end
+        @time = Process.clock_gettime(Process::CLOCK_MONOTONIC) - @start_timer - @paused_time
+        if @time >= 2.5
+            @power_up = false
         end
     elsif @start
         start()
