@@ -13,9 +13,11 @@ set height: @height
 @health = 10
 
 @astroids = []
-@last_astoid_frame = 0
-@astorid_amount = 15
+@last_astroid_frame = 0
+@astroid_amount = 15
 @astroid_size = 20
+@astroid_amount_total = 0
+@astroid_speed = 5
 
 @bullets = []
 @last_bullet_frame = 0
@@ -34,6 +36,8 @@ set height: @height
 
 @current_collisions = []
 @scores = File.readlines("Highscores")
+
+@difficulty = 1
 
 class Player
     attr_accessor :x, :y, :square, :speed
@@ -213,7 +217,8 @@ def hurt(astroid)
 end
 
 def spawn_astroid()
-    if @last_astoid_frame + @astorid_amount < Window.frames
+    if @last_astroid_frame + @astroid_amount < Window.frames
+        @astroid_amount_total +=1
         x = -1
         y = rand(0..@height)
         @astroids.push(Astroid.new(x,y,@astroid_size))
@@ -222,7 +227,7 @@ def spawn_astroid()
 end
 
 def spawn_bullet(x,y)
-    if @last_bullet_frame + @astorid_amount < Window.frames
+    if @last_bullet_frame + @astroid_amount < Window.frames
         @bullets.push(Bullet.new(x,y,@bullet_size))
         @last_bullet_frame = Window.frames
     end
@@ -326,7 +331,7 @@ def collision_check(obj1,obj2, obj1_size,obj2_size)
 end
 def check_astroids()
     @astroids.each do |astroid|
-        astroid.move(5)
+        astroid.move(@astroid_speed)
         if collision_check(@player,astroid,@player_size,@astroid_size)
             hurt(astroid)
             astroid.square.remove
@@ -363,8 +368,11 @@ def check_bullets()
         !bullet.destroyed
     end
 end
-
+@last_total_astroid = 0
 def check_difficulty()
+    if @last_total_astroid + 10 < @astroid_amount_total
+        @astroid_speed+=1
+    end
 end
 
 @counter = Counter.new()
@@ -459,6 +467,7 @@ end
 
 update do
     if @active
+        check_difficulty()
         spawn_astroid()
         check_bullets()
         check_astroids()
