@@ -517,7 +517,7 @@ on :key_down do |event|
         when 'down' 
             @selected_index +=1
             @selected_element = @menu_alternatives[@selected_index % @menu_alternatives.length]
-        when 'space'
+        when 'return'
             choose(@selected_index)
         end
     end
