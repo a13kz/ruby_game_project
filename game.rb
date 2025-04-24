@@ -51,6 +51,8 @@ set height: @height
 
 @max_power_ups = 3
 
+@selected_element = 'resume'
+
 class Player
     attr_accessor :x, :y, :square
         def initialize(x,y,size)
@@ -168,7 +170,7 @@ class Start_screen
                 size: 10
             )
         end
-        @leaderboard = Text.new(File.readlines("Highscores"),size: 20) 
+        
         @title.x = (Window.width - @title.width) / 2
         @info.x = (Window.width - @info.width) / 2
         @text.x = (Window.width - @text.width) / 2
@@ -176,20 +178,19 @@ class Start_screen
     end
 end
 
+@menu_alternatives = ['resume','menu','quit']
+
 class Menu
-    attr_accessor :square, :title
-    menu_alternative = ['resume','quit']
+    attr_accessor :resume, :menu_text, :quit
+
     def initialize()
         #@title = Text.new('Space Evaders', size: 72, y: 40, color: 'white')
-        @resume = Text.new('resume', size: 30, y: 425, color: 'white')
+        @resume = Text.new('Resume', size: 30, y: 425, color: 'white')
         @menu_text = Text.new('Menu',size: 30, y: 450)
         @quit = Text.new('Quit',size: 30, y: 475)
-        @square = Square.new(
-            x: 10,
-            y: 10,
-            size: 100
-            )
     end
+
+
     #@title.x = (Window.width - @title.width) / 2
     #@resume.x = (Window.width - @resume.width) / 2
     #@menu_text.x = (Window.width - @menu_text.width) / 2
@@ -208,7 +209,29 @@ class End
     end
 end
 
-
+def choose(choice)
+    #p choice
+    if @selected_element == 'menu'
+        puts "hello"
+        
+        @menu = false
+       
+        start() 
+        #
+        @active = false
+        @menu_visual.resume.remove
+        @menu_visual.menu_text.remove
+        @menu_visual.quit.remove
+    elsif @selected_element == 'quit'
+        exit()
+    elsif @selected_element == 'resume'
+        @active = true
+        @menu = false
+        @menu_visual.resume.remove
+        @menu_visual.menu_text.remove
+        @menu_visual.quit.remove
+    end
+end
 
 def stop()
     @active = false
@@ -242,9 +265,14 @@ def find_index(arr,score)
     end
     return i
 end
-    @start_screen = Start_screen.new()
-def start()
 
+@start_screen = Start_screen.new()
+
+def start()
+    @start = true
+    @start_screen.title.add
+    @start_screen.text.add
+    @start_screen.info.add
 end
 
 def hurt(astroid)
@@ -276,12 +304,12 @@ def spawn_coin()
     @coins.push(Coin.new(x,y))
     @coin_amount+=1
 end
+
 def spawn_power_up()
     x = rand(0..width)
     y = rand(0..height)
     @power_ups.push(Power_up.new(x,y))
 end
-
 
 def border_check(player)
     distance = @player_size
@@ -347,17 +375,25 @@ def border_check(player)
 end
 
 @menu_visual = Menu.new
-@menu_visual.square.remove
+
+@menu_visual.resume.remove
+@menu_visual.menu_text.remove
+@menu_visual.quit.remove
 #@menu_visual.title.remove
 
 def menu()
-    puts @active    
     if @menu
+        @pause_timestamp = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         @active = false
-        @menu_visual.square.add
-        #@menu_visual.title.add
+        @menu_visual.resume.add
+        @menu_visual.menu_text.add
+        @menu_visual.quit.add
     else
-        @menu_visual.square.remove
+        @menu_visual.resume.remove
+        @menu_visual.menu_text.remove
+        @menu_visual.quit.remove
+        @start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        @paused_time = @start_time - @pause_timestamp
         #@menu_visual.title.remove
         @active = true
     end
@@ -371,6 +407,7 @@ def collision_check(obj1,obj2, obj1_size,obj2_size)
     end
     return false
 end
+
 def check_astroids()
     @astroids.each do |astroid|
         astroid.move(@astroid_speed)
@@ -410,7 +447,9 @@ def check_bullets()
         !bullet.destroyed
     end
 end
+
 @last_total_astroid = 0
+
 def check_difficulty()
     if @last_total_astroid + @difficulty_interval < @astroid_amount_total
         @astroid_speed+=1
@@ -419,7 +458,6 @@ def check_difficulty()
 end
 
 @counter = Counter.new()
-
 
 def check_coins()
     @coins = @coins.select do |coin|
@@ -437,6 +475,7 @@ def check_coins()
     end
 
 end
+
 def check_power_ups()
     @power_ups = @power_ups.select do |power_up|
         !power_up.destroyed
@@ -456,22 +495,30 @@ end
 @player = Player.new(10,10,@player_size)
 @bar = Healthbar.new(100)
 
+@selected_index = 0
+
 on :key_down do |event|
     if !@start && !@stop
         case event.key
-        when 'escape'            
-
-            
+        when 'escape'
             puts @menu
             @menu = !@menu
             menu()
-            if @menu
-                @pause_timestamp = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-            end
-            if !@menu
-                @start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-                @paused_time = @start_time - @pause_timestamp
-            end
+        end
+    end
+end
+
+on :key_down do |event|
+    if @menu
+        case event.key
+        when 'up'
+            @selected_index -=1
+            @selected_element = @menu_alternatives[@selected_index % @menu_alternatives.length]
+        when 'down' 
+            @selected_index +=1
+            @selected_element = @menu_alternatives[@selected_index % @menu_alternatives.length]
+        when 'space'
+            choose(@selected_index)
         end
     end
 end
@@ -502,35 +549,7 @@ on :key_held do |event|
 end
 
 
-on :key_held do |event|
-    if @start
-        case event.key
-        when 'space'
-            @active = true
-            @start = false
-            @start_screen.title.remove
-            @start_screen.text.remove
-            @start_screen.info.remove
-        when 'up'
-            if !@current_collisions.include?("up")
-                @player.square.y -= @speed
-            end
-        when 'down' 
-            if !@current_collisions.include?("down")
-                @player.square.y += @speed
-            end
-        when 'left'
-            if !@current_collisions.include?("left")
-                @player.square.x -= @speed
-            end
-        when 'right' 
-            if !@current_collisions.include?("right")
-                @player.square.x += @speed
-            end
-        end
-    end
-end
-on :key_held do |event|
+on :key_up do |event|
     if @start
         case event.key
         when 'space'
@@ -545,6 +564,19 @@ end
 @time = 0
 
 update do
+    if @selected_element == 'resume'
+        @menu_visual.resume.color = 'red'
+        @menu_visual.quit.color = 'white'
+        @menu_visual.menu_text.color = 'white'
+    elsif @selected_element == 'quit'
+        @menu_visual.resume.color = 'white'
+        @menu_visual.quit.color = 'red'
+        @menu_visual.menu_text.color = 'white'
+    elsif @selected_element == 'menu'
+        @menu_visual.resume.color = 'white'
+        @menu_visual.quit.color = 'white'
+        @menu_visual.menu_text.color = 'red'
+    end
     if @active
         #p @power_up
         check_difficulty()
@@ -562,6 +594,8 @@ update do
         end
         if @power_up
             @speed = 10
+        else
+            @speed = 5
         end
         if @health <= 0
             stop()
