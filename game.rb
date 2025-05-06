@@ -212,12 +212,9 @@ end
 def choose(choice)
     #p choice
     if @selected_element == 'menu'
-        puts "hello"
-        
         @menu = false
-       
-        start() 
-        #
+        start()
+        
         @active = false
         @menu_visual.resume.remove
         @menu_visual.menu_text.remove
@@ -268,7 +265,23 @@ end
 
 @start_screen = Start_screen.new()
 
+
 def start()
+    @player.square.y = 100
+    @player.square.x = 100
+    @hp = 100
+    @astroids.each do |astroid|
+        astroid.square.remove
+    end
+    @power_ups.each do |power_up|
+        power_up.square.remove
+    end
+    @coins.each do |coin|
+        coin.square.remove
+    end
+    @astroids = []
+    @power_ups = []
+    @coins = []
     @start = true
     @start_screen.title.add
     @start_screen.text.add
@@ -492,7 +505,6 @@ def check_power_ups()
 
 end
 
-@player = Player.new(10,10,@player_size)
 @bar = Healthbar.new(100)
 
 @selected_index = 0
@@ -547,7 +559,7 @@ on :key_held do |event|
         end
     end
 end
-
+@player = Player.new(1,1,@player_size)
 
 on :key_up do |event|
     if @start
