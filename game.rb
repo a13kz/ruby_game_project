@@ -53,10 +53,11 @@ set height: @height
 
 @selected_element = 'resume'
 
+
+
 class Player
     attr_accessor :x, :y, :square
         def initialize(x,y,size)
-            
             @square = Square.new(
                 color: 'red',
                 x: x,
@@ -87,16 +88,16 @@ class Counter
 end
 
 class Healthbar
-    attr_accessor :bar, :width
+    attr_accessor :bar, :width, :health
     def initialize(width)
-        @health = Rectangle.new(
+        @bar = Rectangle.new(
         x:0,
         y:0,
         width:100,
         height:10,
         color:'white'
         )
-        @bar = Rectangle.new(
+        @health = Rectangle.new(
         x:0,
         y:0,
         width:100,
@@ -210,11 +211,9 @@ class End
 end
 
 def choose(choice)
-    #p choice
     if @selected_element == 'menu'
         @menu = false
         start()
-        
         @active = false
         @menu_visual.resume.remove
         @menu_visual.menu_text.remove
@@ -264,9 +263,20 @@ def find_index(arr,score)
 end
 
 @start_screen = Start_screen.new()
-
+@player = Player.new(1,1,@player_size)
+@counter = Counter.new()
+@bar = Healthbar.new(100)
 
 def start()
+    @counter.counter.text = "Points:0"
+    @coin_counter = 0
+    @last_total_astroid = 0
+    @astroid_speed = 5
+    @health = 10
+    @bar.bar.remove
+    @bar.health.remove
+    @bar.health.width = 100
+    @player.square.remove
     @player.square.y = 100
     @player.square.x = 100
     @hp = 100
@@ -291,7 +301,7 @@ end
 def hurt(astroid)
     astroid.destroyed = true
     @health-=1
-    @bar.bar.width-=10
+    @bar.health.width-=10
 end
 
 def spawn_astroid()
@@ -461,8 +471,6 @@ def check_bullets()
     end
 end
 
-@last_total_astroid = 0
-
 def check_difficulty()
     if @last_total_astroid + @difficulty_interval < @astroid_amount_total
         @astroid_speed+=1
@@ -470,7 +478,6 @@ def check_difficulty()
     end
 end
 
-@counter = Counter.new()
 
 def check_coins()
     @coins = @coins.select do |coin|
@@ -505,7 +512,7 @@ def check_power_ups()
 
 end
 
-@bar = Healthbar.new(100)
+
 
 @selected_index = 0
 
@@ -559,7 +566,7 @@ on :key_held do |event|
         end
     end
 end
-@player = Player.new(1,1,@player_size)
+
 
 on :key_up do |event|
     if @start
@@ -567,6 +574,9 @@ on :key_up do |event|
         when 'space'
             @active = true
             @start = false
+            @player.square.add
+            @bar.bar.add
+            @bar.health.add
             @start_screen.title.remove
             @start_screen.text.remove
             @start_screen.info.remove
