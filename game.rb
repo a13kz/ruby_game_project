@@ -1,6 +1,10 @@
 require 'ruby2d'
 set title: "SPACE EVADERS"
 
+# File: game.rb
+# Author: Alexander Bohre
+# Date: 2025-05-08
+# Description: This program is a space game with the goal of collecting as many 'coins' as possible with the help of 'power_ups' while simultaneously avoding 'astorids'
 
 @width = 1000.0
 @height = 800.0
@@ -38,11 +42,6 @@ set height: @height
 @start = true
 @stop = false
 
-@start_timer = 0
-@pause_timestamp = 0
-@paused_time = 0
-@start_time = 0
-
 @current_collisions = []
 @scores = File.readlines("Highscores")
 
@@ -52,11 +51,15 @@ set height: @height
 @max_power_ups = 3
 
 @selected_element = 'resume'
+@menu_alternatives = ['resume','menu','quit']
 
+@selected_index = 0
 
-
+# This class represents the player
+# Its position can dynamically be changed
 class Player
     attr_accessor :x, :y, :square
+    # Initialize the player with position and size
         def initialize(x,y,size)
             @square = Square.new(
                 color: 'red',
@@ -67,8 +70,10 @@ class Player
         end
 end
 
+# This class represents coin
 class Coin
     attr_accessor :x, :y, :size, :square, :destroyed
+    # Initialize the coin with position
     def initialize(x,y)
     @destroyed = false
         @square = Square.new(
@@ -80,15 +85,22 @@ class Coin
     end
 end
 
+# This class represents the coin counter for what amount of coins that have been collected
+# Its text can dynamically be changed
 class Counter
     attr_accessor :counter
+    # Initialize the counter
     def initialize()
         @counter = Text.new("Points:0",size: 40, y: Window.height-75, x: 0, color: 'blue')
     end
 end
 
+# This class represents the healthbar
+# Its width can dynamically be changed
 class Healthbar
     attr_accessor :bar, :width, :health
+
+    # Initilizing the background and bar for the healthbar with width
     def initialize(width)
         @bar = Rectangle.new(
         x:0,
@@ -108,9 +120,13 @@ class Healthbar
 
 end
 
+# This class represents the astroids
+# It can move in the x-axis
+
 class Astroid
     attr_accessor :x, :y, :size, :square, :destroyed
     
+    # Initialize the astroid with position and size
     def initialize(x, y, size)
     @destroyed = false
     @square = Square.new(
@@ -120,14 +136,19 @@ class Astroid
     )
     end
     
+    # Moves astroid with speed in x-axis
+    # Parameter: speed
     def move(speed)
-        @square.x +=speed
+        @square.x +=speed #moves astorid
     end
 end
 
+# This class represents the bullet
+# It can move in x-axis
+
 class Bullet
     attr_accessor :x, :y, :size, :square, :destroyed
-    
+    # Initialize the bullet with position and size
     def initialize(x, y, size)
     @destroyed = false
     @square = Square.new(
@@ -136,14 +157,17 @@ class Bullet
     size: size
     )
     end
-    
+    # Moves astroid with speed in x-axis
+    # Parameter: speed
     def move(speed)
         @square.x -=speed
     end
 end
 
+# This class represents the Power_up
 class Power_up
     attr_accessor :square, :destroyed
+    # Initialize the Power_up with position
     def initialize(x,y)
         @destroyed = false
         @square = Square.new(
@@ -155,8 +179,11 @@ class Power_up
     end
 end
 
+# This class represents the start screen
 class Start_screen
     attr_accessor :text, :title, :info
+
+    # Initialize the Start_screen
     def initialize()
         @title = Text.new('SPACE EVADERS', size: 72, y: 40, color: 'white')
         @info = Text.new('Press space to start', size: 30, y: 425, color: 'white')
@@ -164,14 +191,6 @@ class Start_screen
         "Start",
         size: 60
         )
-        leaderboard = File.readlines("Highscores")
-        leaderboard.each do |score|
-            Text.new(
-                score,
-                size: 10
-            )
-        end
-        
         @title.x = (Window.width - @title.width) / 2
         @info.x = (Window.width - @info.width) / 2
         @text.x = (Window.width - @text.width) / 2
@@ -179,27 +198,21 @@ class Start_screen
     end
 end
 
-@menu_alternatives = ['resume','menu','quit']
-
+# This class represents the menu
 class Menu
     attr_accessor :resume, :menu_text, :quit
-
+    # Initialize the menu
     def initialize()
-        #@title = Text.new('Space Evaders', size: 72, y: 40, color: 'white')
         @resume = Text.new('Resume', size: 30, y: 425, color: 'white')
         @menu_text = Text.new('Menu',size: 30, y: 450)
         @quit = Text.new('Quit',size: 30, y: 475)
     end
-
-
-    #@title.x = (Window.width - @title.width) / 2
-    #@resume.x = (Window.width - @resume.width) / 2
-    #@menu_text.x = (Window.width - @menu_text.width) / 2
-    #@quit.x = (Window.width - @quit.width) / 2
 end
 
+# This class represents the End screen
 class End
     attr_accessor :text
+    # Initialize the End screen
     def initialize()
         @text = Text.new(
         "GAME OVER YOU GOT:0",
@@ -210,6 +223,10 @@ class End
     end
 end
 
+# Carries out the action selected when in the menu
+# Parameters:
+# - choice
+# Returns: void
 def choose(choice)
     if @selected_element == 'menu'
         @menu = false
@@ -219,7 +236,7 @@ def choose(choice)
         @menu_visual.menu_text.remove
         @menu_visual.quit.remove
     elsif @selected_element == 'quit'
-        exit()
+        exit
     elsif @selected_element == 'resume'
         @active = true
         @menu = false
@@ -229,25 +246,35 @@ def choose(choice)
     end
 end
 
+# Stop carries out what will happen when the game is over
+# Parameters:
+# - void
+# Returns: void
+
 def stop()
     @active = false
     @stop = true
-    pos = find_index(@scores,@coin_counter)
+    pos = find_index(@scores,@coin_counter) # Calls the find_index with array @scores and integer @coin_counter
     if pos == false
-        @end_text = End.new()
-        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s
+        @end_text = End.new() # New instance of class End
+        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s # shows text of amount of coins collected in total
     else
-        @end_text = End.new()
-        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s
+        @end_text = End.new() # New instance of class End
+        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s # shows text of amount of coins collected in total
         @scores.insert(pos,@coin_counter)
-        @scores.pop        
+        @scores.pop # Removes last element so highscores stays the same length
         fil = File.open("Highscores", "w")
-        fil.puts @scores
+        fil.puts @scores # Overwrites file 'Highscores' with @scores
         fil.close
 
     end
 end
 
+# Calculates the index where 'score' should be in 'arr'.
+# Parameters:
+# - arr: Array to be checked
+# - score: Integer to position
+# Return: Returns index for position in array or false if it does not fit
 def find_index(arr,score)
     i = arr.length
     if arr[i].to_i >= score
@@ -262,11 +289,9 @@ def find_index(arr,score)
     return i
 end
 
-@start_screen = Start_screen.new()
-@player = Player.new(1,1,@player_size)
-@counter = Counter.new()
-@bar = Healthbar.new(100)
-
+# Carries out the operations from when the game starts
+# Parameters: Void
+# Return: Void
 def start()
     @counter.counter.text = "Points:0"
     @coin_counter = 0
@@ -281,14 +306,15 @@ def start()
     @player.square.x = 100
     @hp = 100
     @astroids.each do |astroid|
-        astroid.square.remove
+        astroid.square.remove # remove grapic from each instance of Astorid in array @astorids
     end
     @power_ups.each do |power_up|
-        power_up.square.remove
+        power_up.square.remove # remove grapic from each instance of Power_up in array @power_ups
     end
     @coins.each do |coin|
-        coin.square.remove
+        coin.square.remove # remove grapic from each instance of Coin in array @coins
     end
+    # clear arrays of data
     @astroids = []
     @power_ups = []
     @coins = []
@@ -298,115 +324,130 @@ def start()
     @start_screen.info.add
 end
 
+
+# Calculates damage from collision with astroid and removes the astorid in the collision
+# Parameters:
+# - astroid: instance of the class Astorid
+# Returns: Void
 def hurt(astroid)
     astroid.destroyed = true
     @health-=1
     @bar.health.width-=10
 end
 
+# Instantiates class Astroid
+# Parameters: Void
+# Returns: Void
 def spawn_astroid()
+    # makes sure not to many astorids are in frame
     if @last_astroid_frame + @astroid_amount < Window.frames
         @astroid_amount_total +=1
         x = -1
         y = rand(0..@height)
-        @astroids.push(Astroid.new(x,y,@astroid_size))
+        @astroids.push(Astroid.new(x,y,@astroid_size)) # adds new instance to Array
         @last_astroid_frame = Window.frames
     end
 end
 
+# Instantiates class Bullet
+# Parameters: 
+# - x: Integer for x-axis
+# - y: Integer for y-axis
+# Returns: Void
+
 def spawn_bullet(x,y)
+    # makes sure not to many bullets are in frame
     if @last_bullet_frame + @bullet_amount < Window.frames
-        @bullets.push(Bullet.new(x,y,@bullet_size))
+        @bullets.push(Bullet.new(x,y,@bullet_size)) # adds new instance of Bullet to array
         @last_bullet_frame = Window.frames
     end
 end
 
+# Instantiates class Coin
+# Parameters: Void
+# Returns: Void
 def spawn_coin()
     x = rand(0..width)
     y = rand(0..height)
-    @coins.push(Coin.new(x,y))
+    @coins.push(Coin.new(x,y)) # adds new instance of Coin to array
     @coin_amount+=1
 end
 
+# Instantiates class Power_up
+# Parameters: Void
+# Returns: Void
 def spawn_power_up()
     x = rand(0..width)
     y = rand(0..height)
-    @power_ups.push(Power_up.new(x,y))
+    @power_ups.push(Power_up.new(x,y)) # adds new instance of Coin to array
 end
 
+# Check if 'player' is not outside the width or height of the screen
+# - player: instance of class 'Player'
+# Returns: Void
 def border_check(player)
     distance = @player_size
-    if player.square.x+distance >= @width
-        if !@current_collisions.include?("right")
-            @current_collisions << "right"
+    if player.square.x+distance >= @width # check if against right wall
+        if !@current_collisions.include?("right") # check if player previously has been against right wall
+            @current_collisions << "right" # adds 'right' to array @current_collisions if it has not previously been against the wall
         end
     else
         i = 0
         while i <@current_collisions.length
             if @current_collisions[i] == "right"
-                @current_collisions.delete_at(i)
+                @current_collisions.delete_at(i) # remove 'right' from array if not against right wall
             end
             i+=1
         end
     end
-    if player.square.x <= 0
-        if !@current_collisions.include?("left")
-            @current_collisions << "left"
+    if player.square.x <= 0 # check if against right wall
+        if !@current_collisions.include?("left") # check if player previously has been against right wall
+            @current_collisions << "left" # adds 'left' to array @current_collisions if it has not previously been against the wall
         end
     else
         i = 0
         while i <@current_collisions.length
             if @current_collisions[i] == "left"
-                @current_collisions.delete_at(i)
+                @current_collisions.delete_at(i) # remove 'left' from array if not against right wall
             end
             i+=1
         end
     end
-        if player.square.y+distance >= @height
-            if !@current_collisions.include?("down")
-                @current_collisions << "down"
+        if player.square.y+distance >= @height # check if against down wall
+            if !@current_collisions.include?("down") # check if player previously has been against down wall
+                @current_collisions << "down" # adds 'down' to array @current_collisions if it has not previously been against the wall
             end
         else
             i = 0
-            while i <@current_collisions.length
+            while i <@current_collisions.length 
                 if @current_collisions[i] == "down"
-                    @current_collisions.delete_at(i)
+                    @current_collisions.delete_at(i) # remove 'down' from array if not against right wall
                 end
                 i+=1
             end
         end
-    if player.square.y <= 0
-        if !@current_collisions.include?("up")
-            i = 0
-            @current_collisions << "up"
-            while i <@current_collisions.length
-                if@current_collisions[i] == "down"
-                    @current_collisions.delete_at(i)
-                end
-                i+=1
-            end
+    if player.square.y <= 0 # check if against upper wall
+        if !@current_collisions.include?("up") # check if player previously has been against upper wall
+            
+            @current_collisions << "up" # adds 'up' to array @current_collisions if it has not previously been against the wall
         end
     else
         i = 0
         while i <@current_collisions.length
             if @current_collisions[i] == "up"
-                @current_collisions.delete_at(i)
+                @current_collisions.delete_at(i) # remove 'up' from array if not against right wall
             end
             i+=1
         end
     end
 end
 
-@menu_visual = Menu.new
 
-@menu_visual.resume.remove
-@menu_visual.menu_text.remove
-@menu_visual.quit.remove
-#@menu_visual.title.remove
-
+# Carries out the operations from when the game is paused
+# Parameters: Void
+# Return: Void
 def menu()
     if @menu
-        @pause_timestamp = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         @active = false
         @menu_visual.resume.add
         @menu_visual.menu_text.add
@@ -415,31 +456,40 @@ def menu()
         @menu_visual.resume.remove
         @menu_visual.menu_text.remove
         @menu_visual.quit.remove
-        @start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        @paused_time = @start_time - @pause_timestamp
-        #@menu_visual.title.remove
         @active = true
     end
 end
 
+# Check if two objects are colliding
+# Parameters:
+# - obj1: instance of class
+# - obj2: instance of class
+# - obj1_size: Integer for the size of obj1
+# - obj2_size: Integer for the size of obj1
+# Returns: Void
 def collision_check(obj1,obj2, obj1_size,obj2_size)
-    if obj1.square.x - obj1_size <= obj2.square.x and obj1.square.x + obj1_size >= obj2.square.x
-        if obj1.square.y - obj1_size <= obj2.square.y and obj1.square.y + obj1_size >= obj2.square.y
+    if obj1.square.x - obj1_size <= obj2.square.x and obj1.square.x + obj1_size >= obj2.square.x # Check if x-coordinate of obj1 and obj2 are in range of eachothers size
+        if obj1.square.y - obj1_size <= obj2.square.y and obj1.square.y + obj1_size >= obj2.square.y # Check if y-coordinate of obj1 and obj2 are in range of eachothers size
             return true
         end
     end
     return false
 end
 
+# Check if any instance of class Astorid have been in collision and what of its instances that exist.
+# Parameters: Void
+# Returns: Void
 def check_astroids()
-    @astroids.each do |astroid|
-        astroid.move(@astroid_speed)
-        if collision_check(@player,astroid,@player_size,@astroid_size)
+
+    @astroids.each do |astroid| # Check each @astorids element
+        astroid.move(@astroid_speed) 
+        if collision_check(@player,astroid,@player_size,@astroid_size) # check if astroid have collided with player
             hurt(astroid)
             astroid.square.remove
         end
-        @bullets.each do |bullet|
-            if collision_check(bullet,astroid,@bullet_size,@astroid_size)
+        
+        @bullets.each do |bullet| # Check each @bullets element
+            if collision_check(bullet,astroid,@bullet_size,@astroid_size) # check if astroid have collided with player
                 astroid.destroyed = true
                 bullet.destroyed = true
                 bullet.square.remove
@@ -447,17 +497,21 @@ def check_astroids()
             end
         end
     end
-    @astroids = @astroids.select do |astroid|
+
+   
+    @astroids = @astroids.select do |astroid| # Loop over @astorids array of instances of class Astorid and only select instances inside the confines and not with 'destroyed'
         astroid.square.x >= 0 && 
         astroid.square.x <= @width && 
         astroid.square.y >= 0 && 
         astroid.square.y <= @height &&
         !astroid.destroyed
-
     end
 
 end
 
+# Check if any instance of class Bullet have been in collision and what of its instances that exist.
+# Parameters: Void
+# Returns: Void
 def check_bullets()
     @bullets.each do |bullet|
         bullet.move(@bullet_speed)
@@ -465,12 +519,16 @@ def check_bullets()
             bullet.square.remove
         end
     end
-    @bullets = @bullets.select do |bullet|
+    @bullets = @bullets.select do |bullet| # Loop over @bullets array of instances of class Astorid and only select instances inside the confines and not with 'destroyed'
         bullet.square.x >= -10 && 
         !bullet.destroyed
     end
 end
 
+
+# Check how far the game has gone on and adjust the difficulty based on it
+# Parameters: Void
+# Returns: Void
 def check_difficulty()
     if @last_total_astroid + @difficulty_interval < @astroid_amount_total
         @astroid_speed+=1
@@ -478,7 +536,9 @@ def check_difficulty()
     end
 end
 
-
+# Check if any instance of class Coin have been in collision and what of its instances that exist.
+# Parameters: Void
+# Returns: Void
 def check_coins()
     @coins = @coins.select do |coin|
         !coin.destroyed
@@ -496,6 +556,9 @@ def check_coins()
 
 end
 
+# Check if any instance of class Power_up have been in collision and what of its instances that exist.
+# Parameters: Void
+# Returns: Void
 def check_power_ups()
     @power_ups = @power_ups.select do |power_up|
         !power_up.destroyed
@@ -511,69 +574,67 @@ def check_power_ups()
     end
 
 end
-
-
-
-@selected_index = 0
-
+# Listens for escape presses and activates/deactivates menu accordingly
 on :key_down do |event|
     if !@start && !@stop
         case event.key
         when 'escape'
-            puts @menu
             @menu = !@menu
             menu()
         end
     end
 end
 
+# Listens for key presses when inside menu
 on :key_down do |event|
     if @menu
         case event.key
         when 'up'
             @selected_index -=1
-            @selected_element = @menu_alternatives[@selected_index % @menu_alternatives.length]
+            @selected_element = @menu_alternatives[@selected_index % @menu_alternatives.length] # choose @selected_element and wrap if index is outside range
         when 'down' 
             @selected_index +=1
-            @selected_element = @menu_alternatives[@selected_index % @menu_alternatives.length]
+            @selected_element = @menu_alternatives[@selected_index % @menu_alternatives.length] # choose @selected_element and wrap if index is outside range
         when 'return'
             choose(@selected_index)
         end
     end
 end
 
+# Listens for key presses and preforms actions on the player accordingly
 on :key_held do |event|
     if @active && !@start
         case event.key
         when 'space'
             spawn_bullet(@player.square.x,@player.square.y)
         when 'up'
-            if !@current_collisions.include?("up")
+            if !@current_collisions.include?("up") # if not currently in colliding with upper wall
                 @player.square.y -= @speed
             end
         when 'down' 
-            if !@current_collisions.include?("down")
+            if !@current_collisions.include?("down") # if not currently in colliding with down wall
                 @player.square.y += @speed
             end
         when 'left'
-            if !@current_collisions.include?("left")
+            if !@current_collisions.include?("left") # if not currently in colliding with left wall
                 @player.square.x -= @speed
             end
         when 'right' 
-            if !@current_collisions.include?("right")
+            if !@current_collisions.include?("right") # if not currently in colliding with right wall
                 @player.square.x += @speed
             end
         end
     end
 end
 
-
+# Listens after spacebar to start game from start menu
 on :key_up do |event|
     if @start
         case event.key
         when 'space'
             @active = true
             @start = false
+            # removes and adds graphics
             @player.square.add
             @bar.bar.add
             @bar.health.add
@@ -583,10 +644,24 @@ on :key_up do |event|
         end
     end
 end
-@time = 0
 
+# Instaniating classes
+@start_screen = Start_screen.new()
+@player = Player.new(1,1,@player_size)
+@counter = Counter.new()
+@bar = Healthbar.new(100)
+@menu_visual = Menu.new
+
+# Hiding menu visuals
+@menu_visual.resume.remove
+@menu_visual.menu_text.remove
+@menu_visual.quit.remove
+
+
+# update
 update do
-    if @selected_element == 'resume'
+    # check which element is highlighted
+    if @selected_element == 'resume' 
         @menu_visual.resume.color = 'red'
         @menu_visual.quit.color = 'white'
         @menu_visual.menu_text.color = 'white'
@@ -600,7 +675,7 @@ update do
         @menu_visual.menu_text.color = 'red'
     end
     if @active
-        #p @power_up
+        # calls on functions
         check_difficulty()
         spawn_astroid()
         check_bullets()
@@ -608,23 +683,22 @@ update do
         check_coins()
         check_power_ups()
         border_check(@player)
+
         if @coins.length < @max_coins
             spawn_coin()
         end
         if @power_ups.length < @max_power_ups
             spawn_power_up()
         end
+
         if @power_up
             @speed = 10
         else
             @speed = 5
         end
+
         if @health <= 0
             stop()
-        end
-        @time = Process.clock_gettime(Process::CLOCK_MONOTONIC) - @start_timer - @paused_time
-        if @time >= 2.5
-            @power_up = false
         end
     elsif @start
         start()
