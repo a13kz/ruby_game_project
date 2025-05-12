@@ -11,11 +11,16 @@ set title: "SPACE EVADERS"
 set width: @width
 set height: @height
 
+# Player
 @player_size = 25
 @middle_x = @width/2
 @middle_y = @height/2
 @health = 10
+@current_collisions = []
+@difficulty_interval = 25
+@speed = 5
 
+# Astroids
 @astroids = []
 @last_astroid_frame = 0
 @astroid_amount = 10
@@ -24,36 +29,36 @@ set height: @height
 @astroid_speed = 5
 @last_total_astroid = 0
 
+# Bullets
 @bullets = []
 @last_bullet_frame = 0
 @bullet_amount = 10 
 @bullet_size = 12.5
 @bullet_speed = 7.5
 
+# Power ups
 @power_ups = []
 @power = false
+@max_power_ups = 3
 
+# Coins
 @coins = []
 @coin_amount = 0
 @max_coins = 10
 @coin_counter = 0
 
+# Global booleans for the state of the program
 @active = false
 @start = true
 @stop = false
 
-@current_collisions = []
-@scores = File.readlines("Highscores")
-
-@difficulty_interval = 25
-@speed = 5
-
-@max_power_ups = 3
-
+# menu
 @selected_element = 'resume'
 @menu_alternatives = ['resume','menu','quit']
-
 @selected_index = 0
+
+# Highscore
+@scores = File.readlines("Highscores")
 
 # This class represents the player
 # Its position can dynamically be changed
