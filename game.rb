@@ -40,6 +40,8 @@ set height: @height
 @power_ups = []
 @power = false
 @max_power_ups = 3
+@max_power_up_time = 2.5
+@start_time = 0
 
 # Coins
 @coins = []
@@ -59,6 +61,8 @@ set height: @height
 
 # Highscore
 @scores = File.readlines("Highscores")
+
+
 
 # This class represents the player
 # Its position can dynamically be changed
@@ -259,14 +263,18 @@ end
 def stop()
     @active = false
     @stop = true
+
+    
     pos = find_index(@scores,@coin_counter) # Calls the find_index with array @scores and integer @coin_counter
     if pos == false
         @end_text = End.new() # New instance of class End
         @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s # shows text of amount of coins collected in total
     else
         @end_text = End.new() # New instance of class End
-        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s # shows text of amount of coins collected in total
-        @scores.insert(pos,@coin_counter)
+        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s # shows text of amount of coins collected in total    
+        puts "Your name: "
+        input = gets.chomp
+        @scores.insert(pos,"#{input}: #{@coin_counter}")
         @scores.pop # Removes last element so highscores stays the same length
         fil = File.open("Highscores", "w")
         fil.puts @scores # Overwrites file 'Highscores' with @scores
@@ -302,7 +310,7 @@ def start()
     @coin_counter = 0
     @last_total_astroid = 0
     @astroid_speed = 5
-    @health = 10
+    @health = 1
     @bar.bar.remove
     @bar.health.remove
     @bar.health.width = 100
@@ -570,13 +578,15 @@ def check_power_ups()
     end
     @power_ups.each do |power_up|
         if collision_check(@player,power_up,@player_size,20)
-            @start_timer = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-            @paused_time = 0
+            @start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
             @power_up = true
             power_up.square.remove
             power_up.destroyed = true
         end
     end
+    if Process.clock_gettime(Process::CLOCK_MONOTONIC) - @start_time > @max_power_up_time # Calculating for how long the power up lasts
+        @power_up = false
+    end 
 
 end
 # Listens for escape presses and activates/deactivates menu accordingly
