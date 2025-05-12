@@ -310,7 +310,7 @@ def start()
     @coin_counter = 0
     @last_total_astroid = 0
     @astroid_speed = 5
-    @health = 1
+    @health = 10
     @bar.bar.remove
     @bar.health.remove
     @bar.health.width = 100
