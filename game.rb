@@ -59,11 +59,6 @@ set height: @height
 @menu_alternatives = ['resume','menu','quit']
 @selected_index = 0
 
-# Highscore
-@scores = File.readlines("Highscores")
-
-
-
 # This class represents the player
 # Its position can dynamically be changed
 class Player
@@ -259,48 +254,13 @@ end
 # Parameters:
 # - void
 # Returns: void
-
 def stop()
     @active = false
     @stop = true
-
-    
-    pos = find_index(@scores,@coin_counter) # Calls the find_index with array @scores and integer @coin_counter
-    if pos == false
-        @end_text = End.new() # New instance of class End
-        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s # shows text of amount of coins collected in total
-    else
-        @end_text = End.new() # New instance of class End
-        @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s # shows text of amount of coins collected in total    
-        puts "Your name: "
-        input = gets.chomp
-        @scores.insert(pos,"#{input}: #{@coin_counter}")
-        @scores.pop # Removes last element so highscores stays the same length
-        fil = File.open("Highscores", "w")
-        fil.puts @scores # Overwrites file 'Highscores' with @scores
-        fil.close
-
-    end
+    @end_text = End.new() # New instance of class End
+    @end_text.text.text = "GAME OVER YOU GOT:#{@coin_counter}".to_s # shows text of amount of coins collected in total
 end
 
-# Calculates the index where 'score' should be in 'arr'.
-# Parameters:
-# - arr: Array to be checked
-# - score: Integer to position
-# Return: Returns index for position in array or false if it does not fit
-def find_index(arr,score)
-    i = arr.length
-    if arr[i].to_i >= score
-        return false
-    end
-    while i > 0
-        if arr[i].to_i >= score
-            return i+1
-        end
-        i -=1
-    end
-    return i
-end
 
 # Carries out the operations from when the game starts
 # Parameters: Void
